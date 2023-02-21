@@ -1,4 +1,7 @@
-var builder = WebApplication.CreateBuilder(args);
+using WebChatBack.Data;
+using Microsoft.EntityFrameworkCore;
+
+var builder = WebApplication.CreateBuilder();
 
 // Add services to the container.
 
@@ -7,7 +10,20 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddDbContext<ChatContext>(options =>
+			  options.UseSqlServer(builder.Configuration.GetConnectionString("ConnectionStr")));
+
+
+
 var app = builder.Build();
+
+var webSocketOptions = new WebSocketOptions
+{
+	KeepAliveInterval = TimeSpan.FromMinutes(2)
+};
+
+
+app.UseWebSockets(webSocketOptions);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -16,9 +32,16 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseRouting();
+
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
+
 
 app.MapControllers();
 
