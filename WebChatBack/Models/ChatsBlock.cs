@@ -1,4 +1,6 @@
-﻿namespace WebChatBack.Models
+﻿using Newtonsoft.Json;
+
+namespace WebChatBack.Models
 {
 	public class ChatsBlock
 	{
@@ -7,8 +9,10 @@
 
 		public int UserId { get; set; }
 
+		[JsonIgnore]
 		public User user { get; set; }
 
+		[JsonIgnore]
 		public Chat chat { get; set; }
 
 		public ChatsBlock()

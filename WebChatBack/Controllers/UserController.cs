@@ -22,7 +22,8 @@ namespace WebChatBack.Controllers
 	{
 		private static readonly Dictionary<string,WebSocket> activeUsers = new Dictionary<string, WebSocket>();
 		string id;
-	
+
+		private static readonly ReqDb req = new ReqDb();
 
 
 		public static ChatContext chat;
@@ -46,11 +47,7 @@ namespace WebChatBack.Controllers
 				id = HttpContext.Request.Query["id"];
 				if (!activeUsers.ContainsKey(id))
 				{
-					Console.WriteLine(123);
 					activeUsers.TryAdd(id, webSocket);
-
-
-					
 
 				 await ChatsBlock(id);
 	            }
@@ -62,76 +59,114 @@ namespace WebChatBack.Controllers
 
 
 		private static async Task ChatsBlock(string id)
-		{
-			var serializer = new JavaScriptSerializer(); 
-			WebSocket st = activeUsers[id];
-			var buffer = new byte[1024 * 4];
-
-
-
-			ReqDb req = new ReqDb();
-		    var chats = JsonData(new DataForm("GetChannels", await req.GetChatsList(chat, Convert.ToInt32(id))));
-
-			await st.SendAsync(chats, WebSocketMessageType.Text, true, CancellationToken.None);
-
-
-
-			var receiveResult = await st.ReceiveAsync(
-				new ArraySegment<byte>(buffer), CancellationToken.None);
-
-	
-			while (!receiveResult.CloseStatus.HasValue)
+		{	
+			
+			try
 			{
-				
-				var str = Encoding.UTF8.GetString(buffer, 0, buffer.Length);
-
-				Console.WriteLine(str);
-				dynamic csharpPerson = serializer.Deserialize<dynamic>(str);
-
-
-
-				switch (csharpPerson["name"])
-				{
-					case "GetChatById":
-						{
-						  buffer = JsonData(new DataForm("Messages", await req.GetChatById(chat, Convert.ToInt32(csharpPerson["object"]["Id"]))));
-							
-						}
-							
-
-						break;
-
-				}
+                WebSocket st = activeUsers[id];
+				var serializer = new JavaScriptSerializer();
+			
+				var buffer = new byte[1024 * 4];
 
 
 
+				var chats = JsonData(new DataForm("GetChannels", await req.GetChatsList(chat, Convert.ToInt32(id))));
+
+				await st.SendAsync(chats, WebSocketMessageType.Text, true, CancellationToken.None);
 
 
 
-				
-				await st.SendAsync(
-
-                            new ArraySegment<byte>(buffer, 0, buffer.Length),
-                            receiveResult.MessageType,
-                            receiveResult.EndOfMessage,
-                            CancellationToken.None);
-
-
-
-				receiveResult = await st.ReceiveAsync(
+				var receiveResult = await st.ReceiveAsync(
 					new ArraySegment<byte>(buffer), CancellationToken.None);
-			}
 
+
+				while (!receiveResult.CloseStatus.HasValue)
+				{
+
+					var str = Encoding.UTF8.GetString(buffer, 0, buffer.Length);
+
+					Console.WriteLine(str);
+					dynamic csharpPerson = serializer.Deserialize<dynamic>(str);
+
+
+
+					switch (csharpPerson["name"])
+					{
+						case "GetChatById":
+							{
+								buffer = JsonData(new DataForm("Messages", await req.GetChatById(chat, Convert.ToInt32(csharpPerson["object"]["Id"]))));
+
+
+								await st.SendAsync(
+
+											new ArraySegment<byte>(buffer, 0, buffer.Length),
+											receiveResult.MessageType,
+											receiveResult.EndOfMessage,
+											CancellationToken.None);
+
+
+
+							}
+
+
+							break;
+						case "PostMess":
+							{
+								DataForm dataForm = new DataForm("NewMessage", await req.PostMessage(chat, csharpPerson["object"]));
+
+								buffer = JsonData(dataForm);
+							
+						       foreach(int user in await req.GetUsersInChat(chat, Convert.ToInt32(csharpPerson["object"]["ChatId"])))
+								{
+
+									if (activeUsers.ContainsKey(user.ToString()))
+									{
+									
+										await activeUsers[user.ToString()].SendAsync(
+										new ArraySegment<byte>(buffer, 0, buffer.Length),
+										receiveResult.MessageType,
+										receiveResult.EndOfMessage,
+										CancellationToken.None);
+									}
+								}
+
+
+
+							}
+
+
+							break;
+					}
+
+
+
+
+
+
+
+
+
+					receiveResult = await st.ReceiveAsync(
+						new ArraySegment<byte>(buffer), CancellationToken.None);
+				}
+	  					await st.CloseAsync(
+				  receiveResult.CloseStatus.Value,
+				  receiveResult.CloseStatusDescription,
+				  CancellationToken.None);
+
+			}
+			catch(Exception ex)
+			{
+				Console.WriteLine(ex);
+			}
 
 			Console.WriteLine("Close Socket");
 
 			activeUsers.Remove(id);
 
-			await st.CloseAsync(
-		  receiveResult.CloseStatus.Value,
-		  receiveResult.CloseStatusDescription,
-		  CancellationToken.None);
+			
 
+	
 
 
 		}
@@ -140,7 +175,7 @@ namespace WebChatBack.Controllers
 
 
 
-		
+
 		public static   byte[] JsonData(DataForm data)
 		{
 

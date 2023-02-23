@@ -47,6 +47,36 @@ namespace WebChatBack.Classes
 
 
 
+		public async Task<List<int>> GetUsersInChat(ChatContext chat, int id)
+		{
+			var users = await (from u in chat.Users
+								  join c in chat.ChatsBlocks on u.Id equals c.UserId
+								  where c.UserId == u.Id && c.ChatId == id
+								  select u.Id).ToListAsync();
+
+			return users;
+		}
+
+
+
+
+		public async Task<dynamic> PostMessage(ChatContext chat, dynamic data)
+		{
+			Messag messag = new Messag();
+
+			messag.ChatId = Convert.ToInt32(data["ChatId"]);
+			messag.UserId = Convert.ToInt32(data["UserId"]);
+			messag.Mess_Text = data["MessageText"];
+
+
+		   var st =  await chat.AddAsync(messag);
+			
+		   await chat.SaveChangesAsync();
+
+			return messag;
+		}
+
+
 
 	}
 

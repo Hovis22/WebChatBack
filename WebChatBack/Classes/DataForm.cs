@@ -4,9 +4,9 @@
 	{
 		public string Name;
 
-		public List<dynamic> Data;
+		public dynamic Data;
 	
-	  public DataForm(string Name, List<dynamic> Data)
+	  public DataForm(string Name, dynamic Data)
 		{
 			this.Name = Name;
 			this.Data = Data; 
