@@ -17,13 +17,8 @@ builder.Services.AddDbContext<ChatContext>(options =>
 
 var app = builder.Build();
 
-var webSocketOptions = new WebSocketOptions
-{
-	KeepAliveInterval = TimeSpan.FromMinutes(2)
-};
+app.UseWebSockets();
 
-
-app.UseWebSockets(webSocketOptions);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -31,18 +26,26 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
+app.UseCors(builder => builder
+   .SetIsOriginAllowed(_ => true)
+   .AllowAnyMethod()
+   .AllowAnyHeader()
+   .AllowCredentials());
 
-app.UseRouting();
+app.UseHttpsRedirection();
 
+
+
+app.MapControllers();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseAuthentication();
+app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 
-app.MapControllers();
 
 app.Run();

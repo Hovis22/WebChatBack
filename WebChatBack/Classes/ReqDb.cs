@@ -27,9 +27,13 @@ namespace WebChatBack.Classes
 							   {
 								   Id = g.Key.Id,
 								   UserName = g.Key.Name,
-								   LastMessage = g.OrderBy(x => x.Id).Last().Mess_Text,
+								   LastMessage = (from m in chat.Messags
+												  where m.ChatId == g.Key.Id
+												  orderby m.Id descending
+												  select m.Mess_Text).FirstOrDefault(),
 								   MessageCount = g.Count()
 							   }).ToListAsync();
+
 
 			return chats.Cast<dynamic>().ToList();
 		} 
@@ -42,7 +46,7 @@ namespace WebChatBack.Classes
 						   where m.ChatId == id
 						   select m).ToListAsync();
 
-		return messages.Cast<dynamic>().ToList(); ;
+		return messages.Cast<dynamic>().ToList(); 
 	}
 
 
@@ -69,7 +73,7 @@ namespace WebChatBack.Classes
 			messag.Mess_Text = data["MessageText"];
 
 
-		   var st =  await chat.AddAsync(messag);
+	      await chat.AddAsync(messag);
 			
 		   await chat.SaveChangesAsync();
 

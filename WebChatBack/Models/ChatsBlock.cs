@@ -9,10 +9,9 @@ namespace WebChatBack.Models
 
 		public int UserId { get; set; }
 
-		[JsonIgnore]
 		public User user { get; set; }
 
-		[JsonIgnore]
+	
 		public Chat chat { get; set; }
 
 		public ChatsBlock()
