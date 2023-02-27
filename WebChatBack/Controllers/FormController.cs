@@ -27,7 +27,7 @@ namespace WebChatBack.Controllers
 		[HttpPost("login")]
 		public async Task<ActionResult<string>> LoginUser([FromBody] LoginForm user)
 		{
-			var userInf = await chat.Users.Where(x => (x.Email == user.login && x.UserPassword.ToString() == user.password)).FirstOrDefaultAsync();
+			var userInf = await chat.Users.Where(x => (x.Email == user.login && x.Password == user.password)).FirstOrDefaultAsync();
 			
 			if(userInf != null)
 			{

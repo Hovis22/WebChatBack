@@ -11,6 +11,11 @@
 
 		public string Mess_Text { get; set; }
 
+		public DateTime Created { get; set; }
+
+		public bool IsCheck { get; set; }
+
+
 
 	}
 }

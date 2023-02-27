@@ -8,7 +8,9 @@
 
 		public string Email { get; set; }
 
-		public int UserPassword { get; set; }
+		public string Password { get; set; }
+
+		public byte[]? Image { get; set; }
 
 		public List<ChatsBlock>? chatsBlocks { get; set; }
 
@@ -22,7 +24,7 @@
 		{
 			Name = reg.login;
 			Email = reg.email;
-			UserPassword = Convert.ToInt32(reg.password);
+			Password = reg.password;
 		}
 
 

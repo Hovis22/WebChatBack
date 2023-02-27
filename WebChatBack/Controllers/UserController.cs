@@ -70,7 +70,7 @@ namespace WebChatBack.Controllers
 
 
 
-				var chats = JsonData(new DataForm("GetChannels", await req.GetChatsList(chat, Convert.ToInt32(id))));
+				var chats = await JsonData(new DataForm("GetChannels", await req.GetChatsList(chat, Convert.ToInt32(id))));
 
 				await st.SendAsync(chats, WebSocketMessageType.Text, true, CancellationToken.None);
 
@@ -94,7 +94,7 @@ namespace WebChatBack.Controllers
 					{
 						case "GetChatById":
 							{
-								buffer = JsonData(new DataForm("Messages", await req.GetChatById(chat, Convert.ToInt32(csharpPerson["object"]["Id"]))));
+								buffer = await JsonData(new DataForm("Messages", await req.GetChatById(chat, Convert.ToInt32(csharpPerson["object"]["Id"]))));
 
 
 								await st.SendAsync(
@@ -114,7 +114,7 @@ namespace WebChatBack.Controllers
 							{
 								DataForm dataForm = new DataForm("NewMessage", await req.PostMessage(chat, csharpPerson["object"]));
 
-								buffer = JsonData(dataForm);
+								buffer = await JsonData(dataForm);
 							
 						       foreach(int user in await req.GetUsersInChat(chat, Convert.ToInt32(csharpPerson["object"]["ChatId"])))
 								{
@@ -129,13 +129,24 @@ namespace WebChatBack.Controllers
 										CancellationToken.None);
 									}
 								}
-
-
-
 							}
-
-
 							break;
+						case "SearchChannels":
+							{
+								DataForm dataForm = new DataForm("ChannelsFound", await req.SearchChannels(chat, csharpPerson["object"]["value"], Convert.ToInt32(csharpPerson["object"]["userId"])));
+
+								buffer = await JsonData(dataForm);
+
+								await st.SendAsync(new ArraySegment<byte>(buffer, 0, buffer.Length),
+																		receiveResult.MessageType,
+																		receiveResult.EndOfMessage,
+																		CancellationToken.None);
+							}
+							break;
+
+
+
+
 					}
 
 
@@ -176,10 +187,10 @@ namespace WebChatBack.Controllers
 
 
 
-		public static   byte[] JsonData(DataForm data)
+		public static async  Task<byte[]> JsonData(DataForm data)
 		{
 
-			var LeftBlock = JsonConvert.SerializeObject(data);
+			var LeftBlock =  JsonConvert.SerializeObject(data);
 		    return Encoding.UTF8.GetBytes(LeftBlock);
 		}
 
