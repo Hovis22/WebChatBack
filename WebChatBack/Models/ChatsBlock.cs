@@ -14,11 +14,6 @@ namespace WebChatBack.Models
 	
 		public Chat chat { get; set; }
 
-		public ChatsBlock()
-		{
-			user = new User();
-				chat = new Chat();
-		}
 
 
 	}

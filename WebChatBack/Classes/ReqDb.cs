@@ -15,59 +15,26 @@ namespace WebChatBack.Classes
 									where cb.UserId == id
 									select cb).ToListAsync();
 
-			//var chatblock =await (from c in chat.ChatsBlocks
-			//				join u in chat.Users on c.UserId equals u.Id
-			//				where c.UserId == u.Id && c.UserId == id
-			//select c).ToListAsync();
+		
 
-			//var chats = await (from c in chat.ChatsBlocks
-			//				   join u in chat.Users on c.UserId equals u.Id
-			//				   join ch in chat.Chats on c.ChatId equals ch.Id
-			//				   join m in chat.Messags on ch.Id equals m.ChatId
-			//				   where c.UserId == u.Id && c.UserId != id && chatblock.Contains(c.ChatId)
-			//				   && c.ChatId == ch.Id && ch.Id == m.ChatId && m.UserId == u.Id
-			//				   group m by new { u.Name, ch.Id } into g
-			//				   select new
-			//				   {
-			//					   Id = g.Key.Id,
-			//					   UserName = g.Key.Name,
-			//					   LastMessage = (from m in chat.Messags
-			//									  where m.ChatId == g.Key.Id
-			//									  orderby m.Created descending
-			//									  select m.Mess_Text).FirstOrDefault(),
-			//					   MessageCount = g.Count()
-			//				   }).ToListAsync();
-
-
-
-			//var realch = await (from c in chat.Chats
-			//					join cb in chat.ChatsBlocks on c.Id equals cb.ChatId
-			//					join u in chat.Users on cb.UserId equals u.Id
-			//					join m in chat.Messags on c.Id equals m.ChatId
-			//					where c.Id == cb.ChatId && cb.UserId == u.Id && c.Id == m.ChatId && m.UserId == u.Id && c.AllChatBlock.Contains(chatblock) 
-			//					select cb
-
-			//					 ).ToListAsync();
 
 			var chatBlocksWithSameChatId = await (from cb in chat.ChatsBlocks
 												  join u in chat.Users on cb.UserId equals u.Id
-												  join c in chat.Chats on cb.ChatId equals c.Id
-												  join m in chat.Messags on c.Id equals m.ChatId
+												  join c in chat.Chats on cb.ChatId equals c.Id into cg
+												  from x in cg.DefaultIfEmpty()
+												  join m in chat.Messags on x.Id equals m.ChatId into mg
+												  from y in mg.OrderByDescending(m => m.Created).Take(1).DefaultIfEmpty()
 												  where chatBlocks.Select(c => c.ChatId).Contains(cb.ChatId) && cb.UserId != id
-												  group m by new { u.Name, c.Id } into g
+												  group y by new { ChatId = x.Id, UserName = u.Name } into g
 												  orderby g.Max(x => x.Created) descending
 												  select new
 												  {
-													  Id = g.Key.Id,
-													  UserName = g.Key.Name,
-													  LastMessage = (from m in chat.Messags
-																	 where m.ChatId == g.Key.Id
-																	 orderby m.Created descending
-																	 select m.Mess_Text).FirstOrDefault(),
+													  Id = g.Key.ChatId,
+													  UserName = g.Key.UserName,
+													  LastMessage = g.FirstOrDefault().Mess_Text ?? "",
 													  MessageCount = g.Where(x => (x.IsCheck == false && x.UserId != id)).Count(),
-													  LastMessageCreated = g.Max(x => x.Created)
+													  LastMessageCreated = g.Max(x => x.Created) == default ? DateTime.Now : g.Max(x => x.Created)
 												  }).ToListAsync();
-
 
 
 			return chatBlocksWithSameChatId.Cast<dynamic>().ToList();
@@ -122,7 +89,7 @@ namespace WebChatBack.Classes
 			messag.ChatId = Convert.ToInt32(data["ChatId"]);
 			messag.UserId = Convert.ToInt32(data["UserId"]);
 			messag.Mess_Text = data["MessageText"];
-
+			messag.Created = DateTime.Now;
 
 	      await chat.AddAsync(messag);
 			
@@ -130,6 +97,53 @@ namespace WebChatBack.Classes
 
 			return messag;
 		}
+
+
+
+
+
+		public async Task<dynamic> AddChatBlock(ChatContext chat, dynamic data)
+		{
+			var st = await AddChat(chat);
+			ChatsBlock chatsBlock1 = new ChatsBlock();
+			chatsBlock1.UserId = Convert.ToInt32(data["OwnUserId"]);
+			chatsBlock1.ChatId = st.Id;
+
+			ChatsBlock chatsBlock2 = new ChatsBlock();
+
+			chatsBlock2.UserId = Convert.ToInt32(data["UserToAdd"]);
+			chatsBlock2.ChatId = st.Id;
+
+			await chat.AddAsync(chatsBlock1);
+			await chat.AddRangeAsync(new List<ChatsBlock> { chatsBlock1, chatsBlock2 });
+
+
+
+			await chat.SaveChangesAsync();
+
+			return null;
+		}
+
+
+
+
+		public async Task<Chat> AddChat(ChatContext chat)
+		{
+			Console.WriteLine("\nAddChannel");
+			Chat newChat = new Chat();
+
+			newChat.Type =  "Chat";
+
+			await chat.AddAsync(newChat);
+
+			await chat.SaveChangesAsync();
+
+			
+
+			return newChat;
+		}
+
+
 
 
 

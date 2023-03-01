@@ -44,7 +44,6 @@ namespace WebChatBack.Controllers
 		public async Task<ActionResult<string>> RegisterUser([FromBody] RegisterModel reg)
 
 		{    
-
 			Console.WriteLine(123);
 			User user = new User(reg);
 			await chat.AddAsync(user);
@@ -52,8 +51,6 @@ namespace WebChatBack.Controllers
 
 			string jwtToken = await CreateToken(user);
 			return jwtToken;
-
-		
 		}
 
 

@@ -143,7 +143,19 @@ namespace WebChatBack.Controllers
 																		CancellationToken.None);
 							}
 							break;
+						case "CreateChannel":
+							{
+								await req.AddChatBlock(chat, csharpPerson["object"]);
+								DataForm dataForm = new DataForm("AddChannel", await req.GetChatsList(chat, Convert.ToInt32(id)));
 
+								buffer = await JsonData(dataForm);
+
+								await st.SendAsync(new ArraySegment<byte>(buffer, 0, buffer.Length),
+																		receiveResult.MessageType,
+																		receiveResult.EndOfMessage,
+																		CancellationToken.None);
+							}
+							break;
 
 
 
