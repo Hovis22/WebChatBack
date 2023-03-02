@@ -82,8 +82,9 @@ namespace WebChatBack.Controllers
 
 				while (!receiveResult.CloseStatus.HasValue)
 				{
+					var sendbuffer = new byte[1024 * 4];
 
-					var str = Encoding.UTF8.GetString(buffer, 0, buffer.Length);
+					var str  = Encoding.ASCII.GetString(buffer);
 
 					Console.WriteLine(str);
 					dynamic csharpPerson = serializer.Deserialize<dynamic>(str);
@@ -94,12 +95,12 @@ namespace WebChatBack.Controllers
 					{
 						case "GetChatById":
 							{
-								buffer = await JsonData(new DataForm("Messages", await req.GetChatById(chat, Convert.ToInt32(csharpPerson["object"]["Id"]))));
+								sendbuffer = await JsonData(new DataForm("Messages", await req.GetChatById(chat, Convert.ToInt32(csharpPerson["object"]["Id"]))));
 
 
 								await st.SendAsync(
 
-											new ArraySegment<byte>(buffer, 0, buffer.Length),
+											new ArraySegment<byte>(sendbuffer, 0, sendbuffer.Length),
 											receiveResult.MessageType,
 											receiveResult.EndOfMessage,
 											CancellationToken.None);
@@ -114,7 +115,7 @@ namespace WebChatBack.Controllers
 							{
 								DataForm dataForm = new DataForm("NewMessage", await req.PostMessage(chat, csharpPerson["object"]));
 
-								buffer = await JsonData(dataForm);
+								sendbuffer = await JsonData(dataForm);
 							
 						       foreach(int user in await req.GetUsersInChat(chat, Convert.ToInt32(csharpPerson["object"]["ChatId"])))
 								{
@@ -123,7 +124,7 @@ namespace WebChatBack.Controllers
 									{
 									
 										await activeUsers[user.ToString()].SendAsync(
-										new ArraySegment<byte>(buffer, 0, buffer.Length),
+										new ArraySegment<byte>(sendbuffer, 0, sendbuffer.Length),
 										receiveResult.MessageType,
 										receiveResult.EndOfMessage,
 										CancellationToken.None);
@@ -135,9 +136,9 @@ namespace WebChatBack.Controllers
 							{
 								DataForm dataForm = new DataForm("ChannelsFound", await req.SearchChannels(chat, csharpPerson["object"]["value"], Convert.ToInt32(csharpPerson["object"]["userId"])));
 
-								buffer = await JsonData(dataForm);
+								sendbuffer = await JsonData(dataForm);
 
-								await st.SendAsync(new ArraySegment<byte>(buffer, 0, buffer.Length),
+								await st.SendAsync(new ArraySegment<byte>(sendbuffer, 0, sendbuffer.Length),
 																		receiveResult.MessageType,
 																		receiveResult.EndOfMessage,
 																		CancellationToken.None);
@@ -148,9 +149,9 @@ namespace WebChatBack.Controllers
 								await req.AddChatBlock(chat, csharpPerson["object"]);
 								DataForm dataForm = new DataForm("AddChannel", await req.GetChatsList(chat, Convert.ToInt32(id)));
 
-								buffer = await JsonData(dataForm);
+								sendbuffer = await JsonData(dataForm);
 
-								await st.SendAsync(new ArraySegment<byte>(buffer, 0, buffer.Length),
+								await st.SendAsync(new ArraySegment<byte>(sendbuffer, 0, sendbuffer.Length),
 																		receiveResult.MessageType,
 																		receiveResult.EndOfMessage,
 																		CancellationToken.None);
@@ -165,12 +166,13 @@ namespace WebChatBack.Controllers
 
 
 
-
-
+					sendbuffer = null;
 
 
 					receiveResult = await st.ReceiveAsync(
 						new ArraySegment<byte>(buffer), CancellationToken.None);
+				
+				
 				}
 	  					await st.CloseAsync(
 				  receiveResult.CloseStatus.Value,

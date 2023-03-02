@@ -54,13 +54,9 @@ namespace WebChatBack.Classes
 
 		public async Task<List<User>> SearchChannels(ChatContext chat, string value, int id)
 		{
-			var userName = await (from u in chat.Users
-								  where u.Name.StartsWith(value)
-								  select u
-								  ).ToListAsync();
 
 			var usersWithoutCommonChats = await (from u in chat.Users
-												 where !chat.ChatsBlocks.Any(cb => cb.UserId == u.Id && chat.Chats.Any(c => c.AllChatBlock.Contains(cb) && c.AllChatBlock.Any(cb2 => cb2.UserId == id)))
+												 where u.Name.StartsWith(value) && u.Id != id && !chat.ChatsBlocks.Any(cb => cb.UserId == u.Id && chat.Chats.Any(c => c.AllChatBlock.Contains(cb) && c.AllChatBlock.Any(cb2 => cb2.UserId == id)))
 												 select u).ToListAsync();
 			
 			return usersWithoutCommonChats;
