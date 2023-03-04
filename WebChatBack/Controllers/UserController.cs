@@ -132,6 +132,51 @@ namespace WebChatBack.Controllers
 								}
 							}
 							break;
+						case "ChangeMess":
+							{
+								DataForm dataForm = new DataForm("ChangeMess", await req.ChangeMess(chat, csharpPerson["object"]));
+
+								sendbuffer = await JsonData(dataForm);
+
+								foreach (int user in await req.GetUsersInChat(chat, Convert.ToInt32(csharpPerson["object"]["ChatId"])))
+								{
+
+									if (activeUsers.ContainsKey(user.ToString()))
+									{
+
+										await activeUsers[user.ToString()].SendAsync(
+										new ArraySegment<byte>(sendbuffer, 0, sendbuffer.Length),
+										receiveResult.MessageType,
+										receiveResult.EndOfMessage,
+										CancellationToken.None);
+									}
+								}
+							}
+							break;
+						case "DeleteMes":
+							{
+							  req.DeleteMess(chat, csharpPerson["object"]);
+								DataForm dataForm = new DataForm("DeleteMes", csharpPerson["object"]["MessId"]);
+								Console.WriteLine(csharpPerson["object"]["MessId"]);
+								sendbuffer = await JsonData(dataForm);
+
+								foreach (int user in await req.GetUsersInChat(chat, Convert.ToInt32(csharpPerson["object"]["ChatId"])))
+								{
+
+									if (activeUsers.ContainsKey(user.ToString()))
+									{
+
+										await activeUsers[user.ToString()].SendAsync(
+										new ArraySegment<byte>(sendbuffer, 0, sendbuffer.Length),
+										receiveResult.MessageType,
+										receiveResult.EndOfMessage,
+										CancellationToken.None);
+									}
+								}
+							}
+							break;
+
+
 						case "SearchChannels":
 							{
 								DataForm dataForm = new DataForm("ChannelsFound", await req.SearchChannels(chat, csharpPerson["object"]["value"], Convert.ToInt32(csharpPerson["object"]["userId"])));

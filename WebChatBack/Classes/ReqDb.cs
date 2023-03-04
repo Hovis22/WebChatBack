@@ -23,7 +23,7 @@ namespace WebChatBack.Classes
 												  join c in chat.Chats on cb.ChatId equals c.Id into cg
 												  from x in cg.DefaultIfEmpty()
 												  join m in chat.Messags on x.Id equals m.ChatId into mg
-												  from y in mg.OrderByDescending(m => m.Created).Take(1).DefaultIfEmpty()
+												  from y in mg.OrderByDescending(m => m.Created).DefaultIfEmpty()
 												  where chatBlocks.Select(c => c.ChatId).Contains(cb.ChatId) && cb.UserId != id
 												  group y by new { ChatId = x.Id, UserName = u.Name } into g
 												  orderby g.Max(x => x.Created) descending
@@ -31,9 +31,9 @@ namespace WebChatBack.Classes
 												  {
 													  Id = g.Key.ChatId,
 													  UserName = g.Key.UserName,
-													  LastMessage = g.FirstOrDefault().Mess_Text ?? "",
+													  LastMessage = g.OrderBy(x=>x.Created).Last().Mess_Text ?? "",
 													  MessageCount = g.Where(x => (x.IsCheck == false && x.UserId != id)).Count(),
-													  LastMessageCreated = g.Max(x => x.Created) == default ? DateTime.Now : g.Max(x => x.Created)
+													  LastMessageCreated = g.Max(x => x.Created) == default ? null : g.Max(x => x.Created)
 												  }).ToListAsync();
 
 
@@ -86,6 +86,7 @@ namespace WebChatBack.Classes
 			messag.UserId = Convert.ToInt32(data["UserId"]);
 			messag.Mess_Text = data["MessageText"];
 			messag.Created = DateTime.Now;
+			messag.IsCheck = false;
 
 	      await chat.AddAsync(messag);
 			
@@ -93,6 +94,35 @@ namespace WebChatBack.Classes
 
 			return messag;
 		}
+
+
+		public async Task<dynamic> ChangeMess(ChatContext chat, dynamic data)
+		{
+			int mesid = Convert.ToInt32(data["MessId"]);
+			var messag = chat.Messags.Where(x => x.Id == mesid).FirstOrDefault();
+
+
+			messag.Mess_Text = data["MessageText"];
+
+		
+			await chat.SaveChangesAsync();
+
+			return messag;
+		}
+
+
+		public void DeleteMess(ChatContext chat, dynamic data)
+		{
+			int mesid = Convert.ToInt32(data["MessId"]);
+			var messag = chat.Messags.Where(x => x.Id == mesid).FirstOrDefault();
+
+
+			 chat.Messags.Remove(messag);
+
+
+			 chat.SaveChanges();
+		}
+
 
 
 
