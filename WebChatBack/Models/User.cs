@@ -10,7 +10,13 @@
 
 		public string Password { get; set; }
 
-		public byte[]? Image { get; set; }
+		public byte[] Image { get; set; }
+
+		public bool Status { get; set; } = false;
+
+		public DateTime LastTimeOnline { get; set; }
+
+
 
 		public List<ChatsBlock>? chatsBlocks { get; set; }
 
@@ -25,6 +31,9 @@
 			Name = reg.login;
 			Email = reg.email;
 			Password = reg.password;
+			Image = System.IO.File.ReadAllBytes("C:\\Users\\Admin\\source\\repos\\WebChatBack\\WebChatBack\\wwwroot\\avatar.png");
+			Status = false;
+			LastTimeOnline = DateTime.Now;
 		}
 
 

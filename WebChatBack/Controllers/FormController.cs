@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Nancy.Json;
+using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -56,6 +57,45 @@ namespace WebChatBack.Controllers
 
 
 
+		[HttpPost]
+		[Route("UserEdit")]
+		public async Task<ActionResult<string>> UserEdit([FromForm] IFormFile file,[FromForm] string data)
+		{
+			var serializer = new JavaScriptSerializer();
+
+
+
+			var userData = JsonConvert.DeserializeObject<ChangeModel>(data);
+
+			Console.WriteLine(userData.Id);
+			
+			byte[] imageData = null;
+			int userId = Convert.ToInt32(userData.Id);
+
+			User user = await chat.Users.Where(x => x.Id == userId).FirstOrDefaultAsync() ;
+			user.Name = userData.Name;
+			user.Email = userData.Login;
+
+
+			if (file.Length != 4)
+			{
+				using (var binarRead = new BinaryReader(file.OpenReadStream()))
+				{
+					imageData = binarRead.ReadBytes((int)file.Length);
+				}
+				user.Image = imageData;
+			}
+
+			chat.Update(user);
+			await chat.SaveChangesAsync();
+
+			string JwtToken = await CreateToken(user);
+
+			return JwtToken;
+		}
+
+
+
 
 		private async Task<string> CreateToken(User user)
 		{
@@ -80,17 +120,24 @@ namespace WebChatBack.Controllers
 		private ClaimsIdentity GetIdentity(User user)
 		{
 			var claims = new List<Claim>
-				{
-					new Claim("Id", Convert.ToString(user.Id)),
-					new Claim("Name", Convert.ToString(user.Name)),
-					new Claim("Login", Convert.ToString(user.Email))
-				};
+	{
+		new Claim("Id", Convert.ToString(user.Id)),
+		new Claim("Name", Convert.ToString(user.Name)),
+		new Claim("Login", Convert.ToString(user.Email))
+	};
+
+			if (user.Image != null)
+			{
+				Claim imageClaim = new Claim("Image", Convert.ToBase64String(user.Image));
+				claims.Add(imageClaim);
+			}
+
 			ClaimsIdentity claimsIdentity =
-			new ClaimsIdentity(claims, "Token", ClaimsIdentity.DefaultNameClaimType,
-				ClaimsIdentity.DefaultRoleClaimType);
+				new ClaimsIdentity(claims, "Token", ClaimsIdentity.DefaultNameClaimType, ClaimsIdentity.DefaultRoleClaimType);
 
 			return claimsIdentity;
 		}
+
 
 
 

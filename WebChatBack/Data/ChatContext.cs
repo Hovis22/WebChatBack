@@ -13,6 +13,7 @@ namespace WebChatBack.Data
 			Database.EnsureCreated();
 		}
 		public DbSet<User> Users { set; get; }
+
 		public DbSet<Chat> Chats { set; get; }
 		public DbSet<Messag> Messags { set; get; }
 

@@ -15,7 +15,6 @@ namespace WebChatBack.Classes
 									where cb.UserId == id
 									select cb).ToListAsync();
 
-		
 
 
 			var chatBlocksWithSameChatId = await (from cb in chat.ChatsBlocks
@@ -25,16 +24,18 @@ namespace WebChatBack.Classes
 												  join m in chat.Messags on x.Id equals m.ChatId into mg
 												  from y in mg.OrderByDescending(m => m.Created).DefaultIfEmpty()
 												  where chatBlocks.Select(c => c.ChatId).Contains(cb.ChatId) && cb.UserId != id
-												  group y by new { ChatId = x.Id, UserName = u.Name } into g
+												  group y by new { ChatId = x.Id, UserName = u.Name, UserImage = u.Image } into g
 												  orderby g.Max(x => x.Created) descending
 												  select new
 												  {
 													  Id = g.Key.ChatId,
 													  UserName = g.Key.UserName,
-													  LastMessage = g.OrderBy(x=>x.Created).Last().Mess_Text ?? "",
+													  UserImage = g.Key.UserImage,
+													  LastMessage = g.OrderBy(x => x.Created).Last().Mess_Text ?? "",
 													  MessageCount = g.Where(x => (x.IsCheck == false && x.UserId != id)).Count(),
-													  LastMessageCreated = g.Max(x => x.Created) == default ? null : g.Max(x => x.Created)
+													  LastMessageCreated = g.Max(x => x.Created) == default ? null : g.Max(x => x.Created),
 												  }).ToListAsync();
+
 
 
 			return chatBlocksWithSameChatId.Cast<dynamic>().ToList();

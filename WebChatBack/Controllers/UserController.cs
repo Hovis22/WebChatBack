@@ -202,7 +202,19 @@ namespace WebChatBack.Controllers
 																		CancellationToken.None);
 							}
 							break;
+						case "UpdateImg":
+							{
+								await req.AddChatBlock(chat, csharpPerson["object"]);
+								DataForm dataForm = new DataForm("AddChannel", await req.GetChatsList(chat, Convert.ToInt32(id)));
 
+								sendbuffer = await JsonData(dataForm);
+
+								await st.SendAsync(new ArraySegment<byte>(sendbuffer, 0, sendbuffer.Length),
+																		receiveResult.MessageType,
+																		receiveResult.EndOfMessage,
+																		CancellationToken.None);
+							}
+							break;
 
 
 					}

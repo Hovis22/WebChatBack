@@ -14,7 +14,6 @@ builder.Services.AddDbContext<ChatContext>(options =>
 			  options.UseSqlServer(builder.Configuration.GetConnectionString("ConnectionStr")));
 
 
-
 var app = builder.Build();
 
 app.UseWebSockets();
