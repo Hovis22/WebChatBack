@@ -1,18 +1,21 @@
 using WebChatBack.Data;
 using Microsoft.EntityFrameworkCore;
+using WebChatBack.Services;
 
 var builder = WebApplication.CreateBuilder();
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ChatContext>(options =>
-			  options.UseSqlServer(builder.Configuration.GetConnectionString("ConnectionStr")));
+	options.UseSqlServer(builder.Configuration.GetConnectionString("ConnectionStr")));
 
+builder.Services.AddScoped<ChatService, ChatService>();
+
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 

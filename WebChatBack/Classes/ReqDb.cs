@@ -24,13 +24,16 @@ namespace WebChatBack.Classes
 												  join m in chat.Messags on x.Id equals m.ChatId into mg
 												  from y in mg.OrderByDescending(m => m.Created).DefaultIfEmpty()
 												  where chatBlocks.Select(c => c.ChatId).Contains(cb.ChatId) && cb.UserId != id
-												  group y by new { ChatId = x.Id, UserName = u.Name, UserImage = u.Image } into g
+												  group y by new { ChatId = x.Id, UserName = u.Name, UserImage = u.Image, UserStatus = u.Status, UserLastTimeOnline = u.LastTimeOnline,UserId = u.Id } into g
 												  orderby g.Max(x => x.Created) descending
 												  select new
 												  {
 													  Id = g.Key.ChatId,
 													  UserName = g.Key.UserName,
+													  UserId = g.Key.UserId,
 													  UserImage = g.Key.UserImage,
+													  UserStatus = g.Key.UserStatus,
+													  UserLastTimeOnline = g.Key.UserLastTimeOnline,
 													  LastMessage = g.OrderBy(x => x.Created).Last().Mess_Text ?? "",
 													  MessageCount = g.Where(x => (x.IsCheck == false && x.UserId != id)).Count(),
 													  LastMessageCreated = g.Max(x => x.Created) == default ? null : g.Max(x => x.Created),
@@ -63,6 +66,17 @@ namespace WebChatBack.Classes
 			return usersWithoutCommonChats;
 		}
 
+
+
+		public async Task<List<int>> SearchUserWith(ChatContext chat,  int id)
+		{
+
+			var usersWithCommonChats = await (from u in chat.Users
+											  where u.Id != id && chat.Chats.Any(c => c.AllChatBlock.Any(cb => cb.UserId == u.Id && cb.UserId != id))
+											  select u.Id).ToListAsync();
+
+			return usersWithCommonChats;
+		}
 
 
 
@@ -126,7 +140,30 @@ namespace WebChatBack.Classes
 
 
 
+		public async Task<string> SetStatuOnline(ChatContext chat, int  id)
+		{
+			
+			var user = chat.Users.Where(x => x.Id == id).FirstOrDefault();
+			user.Status = true;
 
+			chat.Users.Update(user);
+
+			await chat.SaveChangesAsync();
+
+			return null;
+		}
+
+		public async Task<string> SetStatuOffline(ChatContext chat, int id)
+		{
+			var user = chat.Users.Where(x => x.Id == id).FirstOrDefault();
+			user.Status = false;
+
+			user.LastTimeOnline = DateTime.Now;
+
+			chat.Users.Update(user);
+			await chat.SaveChangesAsync();
+			return null;
+		}
 
 
 		public async Task<dynamic> AddChatBlock(ChatContext chat, dynamic data)

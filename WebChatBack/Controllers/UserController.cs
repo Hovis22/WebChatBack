@@ -13,7 +13,7 @@ using System.Net.WebSockets;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
-
+using WebChatBack.Services;
 
 namespace WebChatBack.Controllers
 {
@@ -23,14 +23,16 @@ namespace WebChatBack.Controllers
 		private static readonly Dictionary<string,WebSocket> activeUsers = new Dictionary<string, WebSocket>();
 		string id;
 
-		private static readonly ReqDb req = new ReqDb();
 
 
-		public static ChatContext chat;
+		private  static ChatService chat;
 
-		public UserController(ChatContext context)
+		//private static ChatContext chat;
+
+		public UserController(ChatService chatService)
 		{
-			chat = context;
+			//chat = context;
+			chat = chatService;
 		}
 
 
@@ -68,11 +70,31 @@ namespace WebChatBack.Controllers
 			
 				var buffer = new byte[1024 * 4];
 
+				await chat.SetStatuOnline(Convert.ToInt32(id));
 
-
-				var chats = await JsonData(new DataForm("GetChannels", await req.GetChatsList(chat, Convert.ToInt32(id))));
+				var chats = await JsonData(new DataForm("GetChannels", await chat.GetChatsList(Convert.ToInt32(id))));
 
 				await st.SendAsync(chats, WebSocketMessageType.Text, true, CancellationToken.None);
+
+
+				var bufStart = new byte[1024 * 4];
+
+				bufStart = await JsonData(new DataForm("SetOnline", id));
+
+              
+				foreach (int user in await chat.SearchUserWith(Convert.ToInt32(id)))
+				{
+					if (activeUsers.ContainsKey(user.ToString()))
+					{
+
+						await activeUsers[user.ToString()].SendAsync(bufStart,WebSocketMessageType.Text,true,CancellationToken.None);
+					}
+				}
+
+
+
+
+
 
 
 
@@ -95,7 +117,7 @@ namespace WebChatBack.Controllers
 					{
 						case "GetChatById":
 							{
-								sendbuffer = await JsonData(new DataForm("Messages", await req.GetChatById(chat, Convert.ToInt32(csharpPerson["object"]["Id"]))));
+								sendbuffer = await JsonData(new DataForm("Messages", await chat.GetChatById(Convert.ToInt32(csharpPerson["object"]["Id"]))));
 
 
 								await st.SendAsync(
@@ -113,11 +135,11 @@ namespace WebChatBack.Controllers
 							break;
 						case "PostMess":
 							{
-								DataForm dataForm = new DataForm("NewMessage", await req.PostMessage(chat, csharpPerson["object"]));
+								DataForm dataForm = new DataForm("NewMessage", await chat.PostMessage( csharpPerson["object"]));
 
 								sendbuffer = await JsonData(dataForm);
 							
-						       foreach(int user in await req.GetUsersInChat(chat, Convert.ToInt32(csharpPerson["object"]["ChatId"])))
+						       foreach(int user in await chat.GetUsersInChat( Convert.ToInt32(csharpPerson["object"]["ChatId"])))
 								{
 
 									if (activeUsers.ContainsKey(user.ToString()))
@@ -134,11 +156,11 @@ namespace WebChatBack.Controllers
 							break;
 						case "ChangeMess":
 							{
-								DataForm dataForm = new DataForm("ChangeMess", await req.ChangeMess(chat, csharpPerson["object"]));
+								DataForm dataForm = new DataForm("ChangeMess", await chat.ChangeMess( csharpPerson["object"]));
 
 								sendbuffer = await JsonData(dataForm);
 
-								foreach (int user in await req.GetUsersInChat(chat, Convert.ToInt32(csharpPerson["object"]["ChatId"])))
+								foreach (int user in await chat.GetUsersInChat( Convert.ToInt32(csharpPerson["object"]["ChatId"])))
 								{
 
 									if (activeUsers.ContainsKey(user.ToString()))
@@ -155,12 +177,12 @@ namespace WebChatBack.Controllers
 							break;
 						case "DeleteMes":
 							{
-							  req.DeleteMess(chat, csharpPerson["object"]);
+								chat.DeleteMess( csharpPerson["object"]);
 								DataForm dataForm = new DataForm("DeleteMes", csharpPerson["object"]["MessId"]);
 								Console.WriteLine(csharpPerson["object"]["MessId"]);
 								sendbuffer = await JsonData(dataForm);
 
-								foreach (int user in await req.GetUsersInChat(chat, Convert.ToInt32(csharpPerson["object"]["ChatId"])))
+								foreach (int user in await chat.GetUsersInChat( Convert.ToInt32(csharpPerson["object"]["ChatId"])))
 								{
 
 									if (activeUsers.ContainsKey(user.ToString()))
@@ -179,7 +201,7 @@ namespace WebChatBack.Controllers
 
 						case "SearchChannels":
 							{
-								DataForm dataForm = new DataForm("ChannelsFound", await req.SearchChannels(chat, csharpPerson["object"]["value"], Convert.ToInt32(csharpPerson["object"]["userId"])));
+								DataForm dataForm = new DataForm("ChannelsFound", await chat.SearchChannels(csharpPerson["object"]["value"], Convert.ToInt32(csharpPerson["object"]["userId"])));
 
 								sendbuffer = await JsonData(dataForm);
 
@@ -191,8 +213,8 @@ namespace WebChatBack.Controllers
 							break;
 						case "CreateChannel":
 							{
-								await req.AddChatBlock(chat, csharpPerson["object"]);
-								DataForm dataForm = new DataForm("AddChannel", await req.GetChatsList(chat, Convert.ToInt32(id)));
+								await chat.AddChatBlock(csharpPerson["object"]);
+								DataForm dataForm = new DataForm("AddChannel", await chat.GetChatsList(Convert.ToInt32(id)));
 
 								sendbuffer = await JsonData(dataForm);
 
@@ -204,8 +226,8 @@ namespace WebChatBack.Controllers
 							break;
 						case "UpdateImg":
 							{
-								await req.AddChatBlock(chat, csharpPerson["object"]);
-								DataForm dataForm = new DataForm("AddChannel", await req.GetChatsList(chat, Convert.ToInt32(id)));
+								await chat.AddChatBlock( csharpPerson["object"]);
+								DataForm dataForm = new DataForm("AddChannel", await chat.GetChatsList(Convert.ToInt32(id)));
 
 								sendbuffer = await JsonData(dataForm);
 
@@ -231,10 +253,41 @@ namespace WebChatBack.Controllers
 				
 				
 				}
-	  					await st.CloseAsync(
-				  receiveResult.CloseStatus.Value,
-				  receiveResult.CloseStatusDescription,
-				  CancellationToken.None);
+
+				//var bufEnd = new byte[1024 * 4];
+
+	   //      await chat.SetStatuOffline( Convert.ToInt32(id));
+
+				//bufEnd = await JsonData(new DataForm("SetOffline", id));
+
+
+			
+
+				//await st.CloseAsync(
+				//  receiveResult.CloseStatus.Value,
+				//  receiveResult.CloseStatusDescription,
+				//  CancellationToken.None);
+
+
+
+				
+
+				//foreach (int user in await req.SearchUserWith(chat,Convert.ToInt32(id)))
+				//{
+				//	if (activeUsers.ContainsKey(user.ToString()))
+				//	{
+
+				//		await activeUsers[user.ToString()].SendAsync(
+				//		new ArraySegment<byte>(bufEnd, 0, bufEnd.Length),
+				//		receiveResult.MessageType,
+				//		receiveResult.EndOfMessage,
+				//		CancellationToken.None);
+				//	}
+				//}
+
+
+
+
 
 			}
 			catch(Exception ex)
@@ -244,8 +297,7 @@ namespace WebChatBack.Controllers
 
 			Console.WriteLine("Close Socket");
 
-			activeUsers.Remove(id);
-
+             activeUsers.Remove(id);
 			
 
 	
