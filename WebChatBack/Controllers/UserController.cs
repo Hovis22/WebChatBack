@@ -25,13 +25,12 @@ namespace WebChatBack.Controllers
 
 
 
-		private  static ChatService chat;
+		private readonly  ChatService chat;
 
-		//private static ChatContext chat;
+
 
 		public UserController(ChatService chatService)
 		{
-			//chat = context;
 			chat = chatService;
 		}
 
@@ -60,7 +59,7 @@ namespace WebChatBack.Controllers
 
 
 
-		private static async Task ChatsBlock(string id)
+		private async Task ChatsBlock(string id)
 		{	
 			
 			try
@@ -254,50 +253,46 @@ namespace WebChatBack.Controllers
 				
 				}
 
-				//var bufEnd = new byte[1024 * 4];
+				var bufEnd = new byte[1024 * 4];
 
-	   //      await chat.SetStatuOffline( Convert.ToInt32(id));
+				await chat.SetStatuOffline(Convert.ToInt32(id));
 
-				//bufEnd = await JsonData(new DataForm("SetOffline", id));
-
-
-			
-
-				//await st.CloseAsync(
-				//  receiveResult.CloseStatus.Value,
-				//  receiveResult.CloseStatusDescription,
-				//  CancellationToken.None);
+				bufEnd = await JsonData(new DataForm("SetOffline", id));
 
 
 
-				
 
-				//foreach (int user in await req.SearchUserWith(chat,Convert.ToInt32(id)))
-				//{
-				//	if (activeUsers.ContainsKey(user.ToString()))
-				//	{
+				await st.CloseAsync(
+				  receiveResult.CloseStatus.Value,
+				  receiveResult.CloseStatusDescription,
+				  CancellationToken.None);
 
-				//		await activeUsers[user.ToString()].SendAsync(
-				//		new ArraySegment<byte>(bufEnd, 0, bufEnd.Length),
-				//		receiveResult.MessageType,
-				//		receiveResult.EndOfMessage,
-				//		CancellationToken.None);
-				//	}
-				//}
+
+
+               activeUsers.Remove(id);
+
+
+				foreach (int user in await chat.SearchUserWith(Convert.ToInt32(id)))
+				{
+					if (activeUsers.ContainsKey(user.ToString()))
+					{
+
+						await activeUsers[user.ToString()].SendAsync(bufEnd, WebSocketMessageType.Text, true, CancellationToken.None);
+					}
+				}
 
 
 
 
 
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				Console.WriteLine(ex);
 			}
 
 			Console.WriteLine("Close Socket");
 
-             activeUsers.Remove(id);
 			
 
 	
