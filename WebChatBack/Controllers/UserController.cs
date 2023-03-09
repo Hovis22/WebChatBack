@@ -90,13 +90,6 @@ namespace WebChatBack.Controllers
 					}
 				}
 
-
-
-
-
-
-
-
 				var receiveResult = await st.ReceiveAsync(
 					new ArraySegment<byte>(buffer), CancellationToken.None);
 
@@ -116,7 +109,7 @@ namespace WebChatBack.Controllers
 					{
 						case "GetChatById":
 							{
-								sendbuffer = await JsonData(new DataForm("Messages", await chat.GetChatById(Convert.ToInt32(csharpPerson["object"]["Id"]))));
+								sendbuffer = await JsonData(new DataForm("Messages", await chat.GetChatById(Convert.ToInt32(csharpPerson["object"]["Id"]), Convert.ToInt32(csharpPerson["object"]["UserId"]))));
 
 
 								await st.SendAsync(
@@ -151,6 +144,11 @@ namespace WebChatBack.Controllers
 										CancellationToken.None);
 									}
 								}
+							}
+							break;
+						case "MessagChecked":
+							{
+								await chat.SetMessageIsChecked(Convert.ToInt32(csharpPerson["object"]["MessageId"]));
 							}
 							break;
 						case "ChangeMess":
@@ -196,7 +194,35 @@ namespace WebChatBack.Controllers
 								}
 							}
 							break;
+						case "DeleteChat":
+							{
 
+								DataForm dataForm = new DataForm("DeleteChat", csharpPerson["object"]["ChatId"]);
+								Console.WriteLine(csharpPerson["object"]["ChatId"]);
+								sendbuffer = await JsonData(dataForm);
+
+
+                                foreach (int user in await chat.GetUsersInChat(Convert.ToInt32(csharpPerson["object"]["ChatId"])))
+								{
+
+									if (activeUsers.ContainsKey(user.ToString()))
+									{
+
+										await activeUsers[user.ToString()].SendAsync(
+										new ArraySegment<byte>(sendbuffer, 0, sendbuffer.Length),
+										receiveResult.MessageType,
+										receiveResult.EndOfMessage,
+										CancellationToken.None);
+									}
+								}
+
+
+								chat.DeleteChat(Convert.ToInt32(csharpPerson["object"]["ChatId"]));
+
+
+								
+							}
+							break;
 
 						case "SearchChannels":
 							{
@@ -212,15 +238,30 @@ namespace WebChatBack.Controllers
 							break;
 						case "CreateChannel":
 							{
+								
+
 								await chat.AddChatBlock(csharpPerson["object"]);
 								DataForm dataForm = new DataForm("AddChannel", await chat.GetChatsList(Convert.ToInt32(id)));
+								DataForm dataForm2 = new DataForm("AddChannel", await chat.GetChatsList(Convert.ToInt32(csharpPerson["object"]["UserToAdd"])));
+
+
+								var sendbuffer2 = new byte[1024 * 4];
 
 								sendbuffer = await JsonData(dataForm);
-
+								sendbuffer2 = await JsonData(dataForm2);
 								await st.SendAsync(new ArraySegment<byte>(sendbuffer, 0, sendbuffer.Length),
 																		receiveResult.MessageType,
 																		receiveResult.EndOfMessage,
 																		CancellationToken.None);
+
+
+								await activeUsers[csharpPerson["object"]["UserToAdd"]].SendAsync(new ArraySegment<byte>(sendbuffer2, 0, sendbuffer2.Length),
+																		receiveResult.MessageType,
+																		receiveResult.EndOfMessage,
+																		CancellationToken.None);
+
+
+
 							}
 							break;
 						case "UpdateImg":
@@ -288,6 +329,10 @@ namespace WebChatBack.Controllers
 			}
 			catch (Exception ex)
 			{
+  
+
+				activeUsers.Remove(id);
+
 				Console.WriteLine(ex);
 			}
 

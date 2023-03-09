@@ -28,15 +28,16 @@ namespace WebChatBack.Controllers
 		[HttpPost("login")]
 		public async Task<ActionResult<string>> LoginUser([FromBody] LoginForm user)
 		{
-			var userInf = await chat.Users.Where(x => (x.Email == user.login && x.Password == user.password)).FirstOrDefaultAsync();
+
+			Console.WriteLine(123);
+			var userInf = await chat.Users.Where(x => (x.Name == user.login && x.Password == user.password)).FirstOrDefaultAsync();
 			
 			if(userInf != null)
 			{
 				string jwtToken = await CreateToken(userInf);
-				return jwtToken;
+				return Ok(jwtToken);
 			}
-
-			return "Unknow";
+			else  return BadRequest("Incorrect UserName or Login");
 		}
 
 
@@ -44,8 +45,17 @@ namespace WebChatBack.Controllers
 		[HttpPost("register")]
 		public async Task<ActionResult<string>> RegisterUser([FromBody] RegisterModel reg)
 
-		{    
-			Console.WriteLine(123);
+		{
+
+			User existingUser = await chat.Users.FirstOrDefaultAsync(u => u.Name == reg.login || u.Email == reg.email);
+
+			if (existingUser != null)
+			{
+				return BadRequest("User with this login or email already exists.");
+			}
+
+
+
 			User user = new User(reg);
 			await chat.AddAsync(user);
 			await chat.SaveChangesAsync();
@@ -67,8 +77,9 @@ namespace WebChatBack.Controllers
 
 			var userData = JsonConvert.DeserializeObject<ChangeModel>(data);
 
-			Console.WriteLine(userData.Id);
-			
+
+		
+
 			byte[] imageData = null;
 			int userId = Convert.ToInt32(userData.Id);
 

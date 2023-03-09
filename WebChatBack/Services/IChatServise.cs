@@ -7,7 +7,7 @@ namespace WebChatBack.Services
 	{
 		 Task<List<dynamic>> GetChatsList( int id);
 
-		Task<List<dynamic>> GetChatById( int id);
+		Task<List<dynamic>> GetChatById( int id,int userId);
 
 		Task<List<User>> SearchChannels(string value, int id);
 

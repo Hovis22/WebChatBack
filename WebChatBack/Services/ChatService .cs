@@ -52,8 +52,21 @@ namespace WebChatBack.Services
 
 
 
-		public async Task<List<dynamic>> GetChatById(int id)
+		public async Task<List<dynamic>> GetChatById(int id,int userId)
 		{
+			var ChangeStatusmessages = await (from m in chat.Messags
+								  where m.ChatId == id && m.UserId == userId && m.IsCheck == false
+								  select m).ToListAsync();
+
+			foreach(var change in ChangeStatusmessages)
+			{
+				change.IsCheck = true;
+
+			}
+
+		 await chat.SaveChangesAsync();
+
+
 			var messages = await(from m in chat.Messags
 								 where m.ChatId == id
 								 select m).ToListAsync();
@@ -198,5 +211,34 @@ namespace WebChatBack.Services
 
 			return null;
 		}
+
+
+		public async Task<string> SetMessageIsChecked(int id)
+		{
+			var messag = chat.Messags.Where(x => x.Id == id).FirstOrDefault();
+			messag.IsCheck = true;
+
+			chat.Messags.Update(messag);
+
+			await chat.SaveChangesAsync();
+
+			return null;
+		}
+
+
+
+		public async Task<string> DeleteChat(int id)
+		{
+			var chatToDel = chat.Chats.Where(x => x.Id == id).FirstOrDefault();
+
+			chat.Remove(chatToDel);
+
+
+			await chat.SaveChangesAsync();
+
+			return null;
+		}
+
+
 	}
 }
